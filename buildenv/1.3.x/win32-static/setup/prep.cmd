@@ -35,6 +35,11 @@ if not errorlevel 1 (
 	SET MUMBLE_BUILD_CONFIGURATION=Debug
 	SET MUMBLE_BUILD_USE_LTCG=0
 )
+echo %MUMBLE_PREFIX% | findstr /i /C:"relwithdebinfo" 1>nul
+if not errorlevel 1 (
+	SET MUMBLE_BUILD_CONFIGURATION=RelWithDebInfo
+	SET MUMBLE_BUILD_USE_LTCG=0
+)
 
 :: Automatic detection of no-ltcg mode.
 :: If you want full control of these options, feel
@@ -54,6 +59,13 @@ set MUMBLE_JOM_PREFIX=%MUMBLE_PREFIX%\jom
 set MUMBLE_PYTHON_PREFIX=%MUMBLE_PREFIX%\python
 set MUMBLE_PERL_PREFIX=%MUMBLE_PREFIX%\perl
 set MUMBLE_NASM_PREFIX=%MUMBLE_PREFIX%\nasm
+::we're currently building a *windows* version, not sure of fallout for linux...
+::set MUMBLE_GRPC_PREFIX=%MUMBLE_PREFIX%\grpc-windows\grpc
+::set MUMBLE_GRPC_PREFIX=%MUMBLE_PREFIX%\grpc-1.25.0
+set MUMBLE_GRPC_PREFIX=%MUMBLE_PREFIX%\grpc
+::set MUMBLE_GRPC_PLUGINS_PREFIX=%MUMBLE_PREFIX%\cygwin\bin\grpc_protoc_plugins
+::set MUMBLE_GRPC_PLUGINS_PREFIX=%MUMBLE_PREFIX%\grpc-windows\grpc\bin\grpc_protoc_plugins
+set MUMBLE_GRPC_PLUGINS_PREFIX=%MUMBLE_PREFIX%\grpc\bin
 
 :: We want Cygwin's /usr/bin and /usr/local/bin directories
 :: to come directly after the the PATH additions we prepend
@@ -270,5 +282,14 @@ SET PATH=%MUMBLE_QT_PREFIX%\bin;%PATH%
 SET PATH=%MUMBLE_OPENSSL_PREFIX%\bin;%PATH%
 SET PATH=%MUMBLE_JOM_PREFIX%\bin;%PATH%
 SET PATH=%MUMBLE_PROTOBUF_PREFIX%\bin;%PATH%
+SET PATH=%MUMBLE_GRPC_PLUGINS_PREFIX%;%PATH%
 if "%ARCH%" == "x86" SET PATH=%MUMBLE_ICE_PREFIX%\bin;%PATH%
 if "%ARCH%" == "amd64" SET PATH=%MUMBLE_ICE_PREFIX%\bin\x64;%PATH%
+rem NOTE: the \mumble\ in the middle is dependent on the mumble repository
+rem having been cloned into that name at that location!!!
+rem NOTE: Also, the reason for adding that to the path is so that
+rem 'protoc-gen-murmur-grpcwrapper.exe' can be found in that path, as
+rem protoc does not honor the specification of a full path in the --plugin,
+rem apparently instead generating the name from the output specification, in
+rem this particular case, '--murmur-grpcwrapper_out=.'
+SET PATH=%PATH%;%MUMBLE_PREFIX%\mumble\%MUMBLE_BUILD_CONFIGURATION%

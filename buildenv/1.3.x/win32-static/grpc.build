@@ -1,0 +1,381 @@
+#!/usr/bin/env mumble-build
+# Copyright 2013-2014 The 'mumble-releng' Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that
+# can be found in the LICENSE file in the source tree or at
+# <http://mumble.info/mumble-releng/LICENSE>.
+
+#in case I fail, consider options from... https://stackoverflow.com/questions/39982065/grpc-c-on-windows
+#which includes suggestions of using vcpkg to get a built version... that
+#wouldn't quite seem to fit the mumble approach, but, if all else I've tried fails...
+
+urls=(
+#	"http://releng-distfiles.mumble.info/releng-distfiles/protobuf-cpp-3.2.0.tar.gz"
+#	"https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz"
+	"https://github.com/grpc/grpc/archive/v1.25.0.tar.gz#fn=grpc-1.25.0.tar.gz"
+)
+
+digests=(
+#	"sha1:7518aef2471e7398ebd0d85a53836d6a076222d5"
+#	"sha256:51d773e4297238b282eaa4c1dd317099675b12eef2b414732b851c00459225c6"
+#grpc v1.25
+#	"sha1:f44584031c3f4a1b4353766e4173e23c3b0bf1ce"
+#	"sha256:ffbe61269160ea745e487f79b0fd06b6edd3d50c6d9123f053b5634737cf2f69"
+)
+
+function fetch_grpc_orig {
+#    rm -rf grpc-1.25.0
+#    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc-1.25.0
+    rm -rf grpc
+	sleep 2 # because sometimes seems to be removed but not be completely gone 'yet'...
+    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc
+#    v1.25.0 failed around 88% think it was... with sdk-or-something version needed issues
+#
+#    rm -rf grpc-1.20.0 #trying older version, since v1.25.0 failing against some of windows sdk headers...
+#    git clone --recursive -b "v1.20.0" https://github.com/grpc/grpc grpc-1.20.0
+#   v1.20.0 also failed, tho it got further [93% think it was], but failed on 'warnings treated
+#as errors', bg_somethingoffset construction of static local object not
+#thread safe or some such...
+#   v1.17.0 similar failure to v1.20.0
+#warning C4640: 'bg_bitOffset': construction of local static object is not thread-safe
+#building boringssl googletest stuff...
+#    rm -rf grpc-1.17.0 #trying older version, since v1.25.0 failing against some of windows sdk headers...
+#    git clone --recursive -b "v1.17.0" https://github.com/grpc/grpc grpc-1.17.0
+# trying v1.14.2, 'cuz of comments seen @ https://github.com/grpc/grpc/issues/15647 re v1.14.x
+#    rm -rf grpc-1.14.2 #trying older version, since v1.25.0 failing against some of windows sdk headers...
+#    git clone --recursive -b "v1.14.2" https://github.com/grpc/grpc grpc-1.14.2
+}
+
+function fetch_grpc_windows {
+#    rm -rf grpc-1.25.0
+#    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc-1.25.0
+#    v1.25.0 failed around 88% think it was...
+#    rm -rf grpc-1.20.0 #trying older version, since v1.25.0 failing against some of windows sdk headers...
+#    git clone --recursive -b "v1.20.0" https://github.com/grpc/grpc grpc-1.20.0
+#   v1.20.0 also failed, tho it got further [93% think it was], but failed on 'warnings treated
+#as errors', bg_somethingoffset construction of static local object not
+#thread safe or some such...
+#   v1.17.0 similar failure to v1.20.0
+#warning C4640: 'bg_bitOffset': construction of local static object is not thread-safe
+#building boringssl googletest stuff...
+#    rm -rf grpc-1.17.0 #trying older version, since v1.25.0 failing against some of windows sdk headers...
+#    git clone --recursive -b "v1.17.0" https://github.com/grpc/grpc grpc-1.17.0
+# trying v1.14.2, 'cuz of comments seen @ https://github.com/grpc/grpc/issues/15647 re v1.14.x
+#    rm -rf grpc-1.14.2 #trying older version, since v1.25.0 failing against some of windows sdk headers...
+#    git clone --recursive -b "v1.14.2" https://github.com/grpc/grpc grpc-1.14.2
+#'K, now trying 3rdparty fork, but fear it may not have protocol buffers v3
+#included, which ... which think mumble wants...
+#    git clone https://github.com/jozefizso/grpc-windows.git ./gh.jozefizso.grpc-windows.git
+    rm -rf ./grpc-windows
+    git clone https://github.com/jozefizso/grpc-windows.git ./grpc-windows
+#    git clone https://github.com/d-hoke/grpc-windows.git ./grpc-windows
+}
+
+function fetch {
+    fetch_grpc_orig
+#	exit 1
+#    fetch_grpc_windows
+}
+
+function extract_grpc_orig {
+#   return
+#	tar -zxf grpc-1.25.0.tar.gz
+#	tar -zxf v1.25.0.tar.gz
+#	cd grpc-1.25.0
+	cd grpc
+#	cd grpc-1.20.0
+#	cd grpc-1.17.0
+#	cd grpc-1.14.2
+#  exit 1
+}
+
+function extract_grpc_windows {
+    cd grpc-windows
+#TBD: deal with the pause at end of grpc_clone.bat ...
+    cmd /c $(cygpath -w ./grpc_clone.bat)
+}
+
+function extract {
+    extract_grpc_orig
+#	extract_grpc_windows
+}
+
+function trapped_exit {
+  echo "Yes, we trapped..."
+}
+trap trapped_exit EXIT
+
+function build_grpc_windows {
+#mostly clone from grpc_build.bat in the fetched archive
+#@echo off
+#pushd %~dp0
+pushd .
+
+#should already be in environ with vcvars set (cygwin cmd init'd for mumble build)
+#call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" amd64
+
+echo #### grpc build start!
+
+mkdir -p grpc/bin/zlib
+mkdir -p grpc/bin/zlib/debug
+mkdir -p grpc/bin/zlib/release
+
+#guess not available in our 3.7, not til 3.15 ...
+#we upgraded... hope can use it to get the desired runtime library to match mumble needs...
+export CMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+
+cd grpc/third_party/zlib
+mkdir build && cd build
+mkdir debug && cd debug
+#cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../../../bin/zlib/debug ../..
+$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe)  -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../../../bin/zlib/debug ../..
+#$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe)  -G "NMake Makefiles" -DCMAKE_CXX_FLAGS_RELEASE=-MD -DCMAKE_CXX_FLAGS_DEBUG=-MD -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../../../../bin/zlib/debug ../..
+nmake && nmake install
+
+cd ..
+mkdir release && cd release
+#cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../../../bin/zlib/release ../..
+$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe)  -G "NMake Makefiles"  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../../../bin/zlib/release ../..
+#$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe)  -G "NMake Makefiles" -DCMAKE_CXX_FLAGS_RELEASE=-MD -DCMAKE_CXX_FLAGS_DEBUG=-MD  -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../../../bin/zlib/release ../..
+nmake && nmake install
+
+cd ../../../../bin/zlib/release
+#set PATH=%PATH%;%cd%\bin
+export PATH=$PATH:.\bin
+
+popd
+#pushd %~dp0
+pushd .
+
+cd grpc/third_party/protobuf/cmake
+#cmake -G "Visual Studio 14 2015 Win64" -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON
+#$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) -G "Visual Studio 14 2015 Win64" -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON
+#mumble/murmur building as 32bit apps, we need 32bit versions of library(s)
+#$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) -G "Visual Studio 14 2015"  -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON
+#... $(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) -G "Visual Studio 14 2015" -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL
+#$(cygpath ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) -G "Visual Studio 14 2015" -DCMAKE_CXX_FLAGS_RELEASE=-MD -DCMAKE_CXX_FLAGS_DEBUG=-MD  -Dprotobuf_BUILD_TESTS=OFF -Dprotobuf_WITH_ZLIB=ON
+#devenv.com protobuf.sln /build "Debug|x64" /project ALL_BUILD
+#devenv.com protobuf.sln /build "Debug|x86" /project ALL_BUILD
+#... devenv.com protobuf.sln /build "Debug|Win32" /project ALL_BUILD
+#if not %ERRORLEVEL% == 0 goto Finish
+if [ $? -eq 0 ]; then
+
+echo "robocopying ./Debug .../bin/protobuf/debug"
+#pushd .
+#cmd /c robocopy /mir $(cygpath -w ./Debug) $(cygpath -w ../../../bin/protobuf/debug)
+#( cmd /c robocopy /mir $(cygpath -w ./Debug) $(cygpath -w ../../../bin/protobuf/debug) )
+#cygstart robocopy /mir $(cygpath -w ./Debug) $(cygpath -w ../../../bin/protobuf/debug)
+#run robocopy /mir $(cygpath -w ./Debug) $(cygpath -w ../../../bin/protobuf/debug)
+#looking for a while to stop bash from exiting due to robocopy return codes...
+#suspecting it's related to '-e simple command exit', see https://unix.stackexchange.com/questions/233987/grep-causes-exit-trap-in-bash-script
+#(robocopy returns non-zero values for (some) successful completions)
+#... robocopy /mir $(cygpath -w ./Debug) $(cygpath -w ../../../bin/protobuf/debug) || pwd
+#... robocopy /s $(cygpath -w ./Debug) $(cygpath -w ../../../bin/protobuf/debug) || pwd
+#cp -au ./Debug/* ../../../bin/protobuf/debug/
+#rsync ./Debug ../../../bin/protobuf/debug
+#popd
+#... echo "done robocopying ./Debug .../bin/protobuf/debug"
+
+echo "located at " `pwd` " before protobuf.sln release..."
+
+#devenv.com protobuf.sln /build "Release|x64" /project ALL_BUILD
+#devenv.com protobuf.sln /build "Release|x86" /project ALL_BUILD
+#... devenv.com protobuf.sln /build "Release|Win32" /project ALL_BUILD
+#if not %ERRORLEVEL% == 0 goto Finish
+if [ $? -eq 0 ]; then
+pushd .
+#cmd /c robocopy /mir $(cygpath -w ./Release) $(cygpath -w ../../../bin/protobuf/release)
+#... robocopy /mir $(cygpath -w ./Release) $(cygpath -w ../../../bin/protobuf/release) || pwd
+#... robocopy /s $(cygpath -w ./Release) $(cygpath -w ../../../bin/protobuf/release) || pwd
+#cygstart robocopy /mir $(cygpath -w ./Release) $(cygpath -w ../../../bin/protobuf/release)
+#rsync $(cygpath ./Release) $(cygpath ../../../bin/protobuf/release)
+popd
+
+cd ../../../vsprojects
+#devenv.com grpc_protoc_plugins.sln /build "Release|x64"
+#devenv.com grpc_protoc_plugins.sln /build "Release|x86"
+devenv.com grpc_protoc_plugins.sln /build "Release|Win32"
+#if not %ERRORLEVEL% == 0 goto Finish
+if [ $? -eq 0 ]; then
+pushd .
+#cmd /c robocopy $(cygpath -w ./x64/Release/) $(cygpath -w ../bin/grpc_protoc_plugins/) /XF "*.lib" "*.iobj" "*.ipdb"
+# robocopy $(cygpath -w ./x64/Release/) $(cygpath -w ../bin/grpc_protoc_plugins/) /XF "*.lib" "*.iobj" "*.ipdb" || pwd
+# robocopy $(cygpath -w ./x86/Release/) $(cygpath -w ../bin/grpc_protoc_plugins/) /XF "*.lib" "*.iobj" "*.ipdb" || pwd
+ robocopy $(cygpath -w ./Release/) $(cygpath -w ../bin/grpc_protoc_plugins/) /XF "*.lib" "*.iobj" "*.ipdb" || pwd
+#rsync $(cygpath ./x64/Release/) $(cygpath -w ../bin/grpc_protoc_plugins/) /XF "*.lib" "*.iobj" "*.ipdb"
+popd
+#devenv.com grpc_protoc_plugins.sln /clean "Release|x64"
+#devenv.com grpc_protoc_plugins.sln /clean "Release|x86"
+ devenv.com grpc_protoc_plugins.sln /clean "Release|Win32"
+
+ devenv.com grpc.sln /clean "Debug"
+ devenv.com grpc.sln /clean "Release"
+#devenv.com grpc.sln /build "Debug|x64" /project grpc++
+#devenv.com grpc.sln /build "Debug|x86" /project grpc++
+ devenv.com grpc.sln /build "Debug|Win32" /project grpc++
+#devenv.com grpc.sln /build "Debug|x64" /project grpc++_unsecure
+#devenv.com grpc.sln /build "Debug|x86" /project grpc++_unsecure
+ devenv.com grpc.sln /build "Debug|Win32" /project grpc++_unsecure
+#if not %ERRORLEVEL% == 0 goto Finish
+if [ $? -eq 0 ]; then
+#cmd /c robocopy /mir $(cygpath -w ./x64/Debug) $(cygpath -w ../bin/grpc/debug)
+#cmd /c robocopy /mir $(cygpath -w ./x64/Debug) $(cygpath -w ../bin/grpc/debug) || pwd
+#cmd /c robocopy /mir $(cygpath -w ./x86/Debug) $(cygpath -w ../bin/grpc/debug) || pwd
+#cmd /c robocopy /mir $(cygpath -w ./Debug) $(cygpath -w ../bin/grpc/debug) || pwd
+cmd /c robocopy /s $(cygpath -w ./Debug) $(cygpath -w ../bin/grpc/debug) || pwd
+#rsync $(cygpath ./x64/Debug) $(cygpath ../bin/grpc/debug)
+
+#devenv.com grpc.sln /build "Release|x64" /project grpc++
+#devenv.com grpc.sln /build "Release|x86" /project grpc++
+devenv.com grpc.sln /build "Release|Win32" /project grpc++
+#devenv.com grpc.sln /build "Release|x64" /project grpc++_unsecure
+#devenv.com grpc.sln /build "Release|x86" /project grpc++_unsecure
+devenv.com grpc.sln /build "Release|Win32" /project grpc++_unsecure
+#if not %ERRORLEVEL% == 0 goto Finish
+if [ $? -eq 0 ]; then
+#cmd /c robocopy /mir $(cygpath -w ./x64/Release) $(cygpath -w ../bin/grpc/release) /XF "*grpc_cpp_plugin*"
+# robocopy /mir $(cygpath -w ./x64/Release) $(cygpath -w ../bin/grpc/release) /XF "*grpc_cpp_plugin*" || pwd
+# robocopy /mir $(cygpath -w ./x86/Release) $(cygpath -w ../bin/grpc/release) /XF "*grpc_cpp_plugin*" || pwd
+# robocopy /mir $(cygpath -w ./Release) $(cygpath -w ../bin/grpc/release) /XF "*grpc_cpp_plugin*" || pwd
+ robocopy /s $(cygpath -w ./Release) $(cygpath -w ../bin/grpc/release) /XF "*grpc_cpp_plugin*" || pwd
+
+#:: devenv.com grpc.sln /clean "Debug"
+#:: devenv.com grpc.sln /clean "Release"
+#:: devenv.com grpc.sln /build "Debug-DLL|x64" /project grpc++
+#:: devenv.com grpc.sln /build "Debug-DLL|x64" /project grpc++_unsecure
+#:: if not %ERRORLEVEL% == 0 goto Finish
+#:: robocopy /mir .\x64\Debug-DLL ..\bin\grpc\debug_dll
+
+#:: devenv.com grpc.sln /build "Release-DLL|x64" /project grpc++
+#:: devenv.com grpc.sln /build "Release-DLL|x64" /project grpc++_unsecure
+#:: if not %ERRORLEVEL% == 0 goto Finish
+#:: robocopy /mir .\x64\Release-DLL ..\bin\grpc\release_dll /XF *grpc_cpp_plugin*
+
+echo #### grpc build done!
+
+#robocopy /mir ../grpc-windows $(cygpath -w ${MUMBLE_PREFIX}/grpc-windows)
+
+fi
+fi
+fi
+fi
+fi
+
+#:Finish
+#rem devenv.com protobuf.sln /clean "Debug|x64"
+#rem devenv.com protobuf.sln /clean "Release|x64"
+#rem devenv.com grpc_protoc_plugins.sln /clean "Release|x64" /project grpc_cpp_plugin
+#rem devenv.com grpc.sln /clean "Debug|x64" /project grpc++
+#rem devenv.com grpc.sln /clean "Release|x64" /project grpc++
+popd
+
+robocopy /mir $(cygpath -w ../grpc-windows) $(cygpath -w ${MUMBLE_PREFIX}/grpc-windows)
+
+#pause
+}
+
+function build_grpc_orig {
+	if [ "${MUMBLE_BUILD_CONFIGURATION}" == "Release" ]; then
+		BUILD_TYPE="RelWithDebInfo"
+	elif [ "${MUMBLE_BUILD_CONFIGURATION}" == "Debug" ]; then
+		BUILD_TYPE="Debug"
+	fi
+#	cd cmake
+    pwd
+	#hmm, appears grpc may not like out-of-main-dir builds, least without setting bunch of 'root' variables...
+#	rm -rf build
+#	mkdir -p build
+#	cd build
+#	cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/protobuf) -Dprotobuf_MSVC_STATIC_RUNTIME=off
+#	cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc)
+#	cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc) -DPROTOBUF_ROOT_DIR=../protobuf-3.2.0 -DBORINGSSL_ROOT_DIR=../openssl-1.0.2k -DZLIB_ROOT_DIR=../zlib-1.2.11
+#	cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) .  -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc)
+#	cmd /c nmake
+#alternate possibility, more closely matching grpc's published build instructdions...
+   pushd third_party
+   #try to keep grpc from refing its internal boringSSL, cuz it conflicts with our mumble qt build which is incorporating some other version of openSSL
+   cmd /c ren $(cygpath -w boringSSL) $(cygpath -w hide.boringSSL) || pwd
+   popd
+   mkdir .build || pwd
+#   cd .build
+   pushd .build
+   #EMBED_OPENSSL=false hint found in https://stackoverflow.com/questions/47543372/grpc-installation-fails-at-make
+   #also informative post - https://github.com/grpc/grpc/issues/11655 - regarding boringssl compilation/usage...
+   #maybe eventually helpful - https://stackoverflow.com/questions/14681012/how-to-include-openssl-in-a-qt-project
+   #possibly useful (incorporate to fetch), but still likely conflict with QT, or would same library names somehow 'resolve' themselves, prob. not...
+   #...https://github.com/grpc/grpc/blob/master/tools/openssl/use_openssl.sh
+#   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) ..  -G "Visual Studio 14 2015" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc)
+#-DgRPC_SSL_PROVIDER=package
+# -DgRPC_CARES_PROVIDER=package
+   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) ..  -G "Visual Studio 14 2015" -DgRPC_SSL_PROVIDER=package -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc)
+#   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) ..  -G "Visual Studio 14 2015" -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc)
+#we renamed 'boringSSL' out-of-way per suggestion at one of those links, as the -DEMBED_OPENSSL=false didn't seem effective...
+#   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) ..  -G "Visual Studio 14 2015" -DEMBED_OPENSSL=false -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=$(cygpath -w ${MUMBLE_PREFIX}/grpc)
+   #config should match copy in install() function elsewhere below
+#   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) --build . --config RelWithDebInfo
+#   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) --build . --config Release
+   cmd /c $(cygpath -w ${MUMBLE_PREFIX}/cmake/bin/cmake.exe) --build . --config ${MUMBLE_BUILD_CONFIGURATION}
+   popd
+}
+
+function donothing {
+  return 0
+}
+
+function prepare {
+#may need to apply patch here, prob with boringSSL ctest items 
+  donothing
+  #expected to be inside grpc ( grpc-1.20.0 at this implementation )
+#<sigh> - after patching 1.20, (now) fails with same error 1.25 was failing
+#with, regarding SDK version issue(s) I think...
+#was some other warning when building with vs 2015 generators, bring this back...
+  pushd third_party/boringssl
+	patch -p1 < ${MUMBLE_BUILDENV_ROOT}/patches/grpc.v1.20.0.boringSSLNoWX.patch
+  popd
+
+#expected to be 'grpc' where top-level CMakeLists.txt lives.
+  patch -p1 < ${MUMBLE_BUILDENV_ROOT}/patches/grpc.uselocalmumbleopenssl.patch
+}
+
+function build {
+    build_grpc_orig
+##    cmd /c $(cygpath -w ./grpc_build.bat)
+#    build_grpc_windows
+}
+
+function testsuite {
+#	cmd /c set TEMP=%LOCALAPPDATA%\\Temp \& set TMP=%LOCALAPPDATA%\\Temp \& nmake check
+  donothing
+}
+
+function install {
+#	cmd /c nmake install
+	donothing #until I figure out what 'install' should be for Mumble usage...
+# BE SURE to add "|| pwd" to robocopy commands SINCE it returns various non-zero alues for success, and
+# the shell pretty much checks that and terminates for 'single' (or whatever) commands, the
+# ' || pwd' makes it a not single command, and/or returns whatever is needed to allow continuation.
+#	robocopy /mir $(cygpath -w grpc/bin) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+	pushd .build
+#		robocopy /mir $(cygpath -w RelWithDebInfo) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+		robocopy /mir $(cygpath -w ${MUMBLE_BUILD_CONFIGURATION}) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+#  	    robocopy /mir $(cygpath -w ./third_party/protobuf/RelWithDebInfo) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/bin) || pwd
+#		robocopy      $(cygpath -w ./third_party/protobuf/RelWithDebInfo/*.lib) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/lib)
+#ok, not cleanest (dup'ing to get libs into 'lib' subdir), but not familiar with robocopy syntax/usage...
+#		robocopy /mir $(cygpath -w ./third_party/protobuf/RelWithDebInfo/) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/lib)
+#		robocopy      $(cygpath -w ./third_party/protobuf/RelWithDebInfo/) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/lib) || pwd
+#		robocopy      $(cygpath -w ./third_party/protobuf/RelWithDebInfo) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/lib) || pwd
+#		robocopy      $(cygpath -w ./third_party/protobuf/RelWithDebInfo) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/lib) || echo ""
+		robocopy      $(cygpath -w ./third_party/protobuf/${MUMBLE_BUILD_CONFIGURATION}) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/lib) || echo ""
+		robocopy      $(cygpath -w ./third_party/protobuf/${MUMBLE_BUILD_CONFIGURATION}) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/${MUMBLE_BUILD_CONFIGURATION}) || echo ""
+		robocopy      $(cygpath -w ./third_party/protobuf/${MUMBLE_BUILD_CONFIGURATION}) $(cygpath -w ${MUMBLE_PREFIX}/protobuf/bin) || echo ""
+#		robocopy      $(cygpath -w ./third_party/boringssl/crypto/RelWithDebInfo/) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin)
+#		robocopy      $(cygpath -w ./third_party/boringssl/ssl/RelWithDebInfo/) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin)
+#		robocopy      $(cygpath -w ./third_party/cares/cares/lib/RelWithDebInfo/) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+		robocopy      $(cygpath -w ./third_party/cares/cares/lib/${MUMBLE_BUILD_CONFIGURATION}/) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+#		robocopy      $(cygpath -w ./grpc.dir/RelWithDebInfo/) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+		robocopy      $(cygpath -w ./grpc.dir/${MUMBLE_BUILD_CONFIGURATION}/) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/bin) || pwd
+	popd
+	robocopy /s $(cygpath -w ./include) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/include) || pwd
+#	robocopy /mir $(cygpath -w ./third_party/protobuf) $(cygpath -w ${MUMBLE_GRPC_PREFIX}/protobuf) || pwd
+	robocopy /s $(cygpath -w ./third_party/protobuf) $(cygpath -w ${MUMBLE_PREFIX}/protobuf) || pwd
+	echo "install() - done copying"
+}

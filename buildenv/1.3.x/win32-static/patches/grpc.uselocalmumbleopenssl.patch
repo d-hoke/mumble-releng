@@ -1,0 +1,17 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0693fe1f9a..9104ed0325 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -93,6 +93,12 @@ if(UNIX)
+ endif()
+ if(WIN32)
+   set(_gRPC_PLATFORM_WINDOWS ON)
++#if openssl hunted too soon above, 'cares' package location messes up...
++  set(OPENSSL_ROOT_DIR $ENV{MUMBLE_PREFIX}/OpenSSL)
++  message("OPENSSL_ROOT_DIR IS ${OPENSSL_ROOT_DIR}")
++  include(FindOpenSSL) #is this enuf to populate 'OPENSSL_ROOT_DIR' and/oranything else that needs to be???
++#  set(gRPC_SSL_PROVIDER "module" CACHE STRING "Provider of ssl library")
++#  set_property(CACHE gRPC_SSL_PROVIDER PROPERTY STRINGS "module" "package")
+ endif()
+ 
+ set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
