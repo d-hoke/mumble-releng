@@ -29,5 +29,7 @@ function build {
 function install {
 	mkdir -p ${MUMBLE_PREFIX}/cmake/
 	cp -R * ${MUMBLE_PREFIX}/cmake/
-	chmod +rx ${MUMBLE_PREFIX}/cmake/bin/*.{dll,exe}
+#	chmod +rx ${MUMBLE_PREFIX}/cmake/bin/*.{dll,exe}
+#apparently cmake-3.15 does nothave *.dll files
+	chmod +rx ${MUMBLE_PREFIX}/cmake/bin/*.{exe}
 }
