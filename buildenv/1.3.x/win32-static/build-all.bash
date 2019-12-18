@@ -46,3 +46,5 @@
 
 ./asio.build
 ./g15sdk.build
+
+./grpc.build
