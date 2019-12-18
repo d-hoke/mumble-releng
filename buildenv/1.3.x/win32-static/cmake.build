@@ -30,6 +30,8 @@ function install {
 	mkdir -p ${MUMBLE_PREFIX}/cmake/
 	cp -R * ${MUMBLE_PREFIX}/cmake/
 #	chmod +rx ${MUMBLE_PREFIX}/cmake/bin/*.{dll,exe}
-#apparently cmake-3.15 does nothave *.dll files
-	chmod +rx ${MUMBLE_PREFIX}/cmake/bin/*.{exe}
+#apparently cmake-3.15 does not have *.dll files - would -f/--silent/etc be
+#better choice, in case they return with other fetched version(s)?  And bash
+#must not be smart nuf to handle .{exe} either...
+	chmod +rx ${MUMBLE_PREFIX}/cmake/bin/*.exe
 }
