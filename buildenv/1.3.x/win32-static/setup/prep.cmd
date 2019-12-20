@@ -293,3 +293,4 @@ rem protoc does not honor the specification of a full path in the --plugin,
 rem apparently instead generating the name from the output specification, in
 rem this particular case, '--murmur-grpcwrapper_out=.'
 SET PATH=%PATH%;%MUMBLE_PREFIX%\mumble\%MUMBLE_BUILD_CONFIGURATION%
+SET PATH=%PATH%;%MUMBLE_PREFIX%\cygwin\bin
