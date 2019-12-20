@@ -23,11 +23,12 @@ digests=(
 )
 
 function fetch_grpc_orig {
-#    rm -rf grpc-1.25.0
-#    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc-1.25.0
-    rm -rf grpc
+    rm -rf grpc-1.25.0
 	sleep 2 # because sometimes seems to be removed but not be completely gone 'yet'...
-    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc
+    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc-1.25.0
+#    rm -rf grpc
+#	sleep 2 # because sometimes seems to be removed but not be completely gone 'yet'...
+#    git clone --recursive -b "v1.25.0" https://github.com/grpc/grpc grpc
 #    v1.25.0 failed around 88% think it was... with sdk-or-something version needed issues
 #
 #    rm -rf grpc-1.20.0 #trying older version, since v1.25.0 failing against some of windows sdk headers...
@@ -80,8 +81,8 @@ function extract_grpc_orig {
 #   return
 #	tar -zxf grpc-1.25.0.tar.gz
 #	tar -zxf v1.25.0.tar.gz
-#	cd grpc-1.25.0
-	cd grpc
+	cd grpc-1.25.0
+#	cd grpc
 #	cd grpc-1.20.0
 #	cd grpc-1.17.0
 #	cd grpc-1.14.2
