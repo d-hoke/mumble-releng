@@ -329,11 +329,11 @@ function prepare {
 #with, regarding SDK version issue(s) I think...
 #was some other warning when building with vs 2015 generators, bring this back...
   pushd third_party/boringssl
-	patch -p1 < ${MUMBLE_BUILDENV_ROOT}/patches/grpc.v1.20.0.boringSSLNoWX.patch
+	patch --binary -p1 < ${MUMBLE_BUILDENV_ROOT}/patches/grpc.v1.20.0.boringSSLNoWX.patch
   popd
 
 #expected to be 'grpc' where top-level CMakeLists.txt lives.
-  patch -p1 < ${MUMBLE_BUILDENV_ROOT}/patches/grpc.uselocalmumbleopenssl.patch
+  patch --binary -p1 < ${MUMBLE_BUILDENV_ROOT}/patches/grpc.uselocalmumbleopenssl.patch
 }
 
 function build {
